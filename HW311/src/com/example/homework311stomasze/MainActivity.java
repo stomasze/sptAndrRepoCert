@@ -1,62 +1,55 @@
 package com.example.homework311stomasze;
 
-import android.support.v7.app.ActionBarActivity;
-import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
+import android.app.Activity;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.os.Build;
+import android.widget.Toast;
 
-public class MainActivity extends ActionBarActivity {
-
+public class MainActivity extends Activity {
+    String kTag = "MainActivity";
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        showAllArticles();
 
-        if (savedInstanceState == null) {
-            getSupportFragmentManager().beginTransaction()
-                    .add(R.id.container, new PlaceholderFragment()).commit();
+    }
+
+
+
+    
+    public void showAllArticles() {
+        // Show all the Articles sorted by Title name
+        String URL = ArticlesProvider.URL;
+        Uri articles = Uri.parse(URL);
+        // Delete First
+        int count = getContentResolver().delete(articles, null, null);
+        // Get thew new Content
+        Cursor c = getContentResolver().query(articles, null, null, null, ArticlesProvider.TITLE);
+        
+        String result = "Results:";
+        
+        if (!c.moveToFirst()) {
+            Toast.makeText(this, result+" no content yet!", Toast.LENGTH_LONG).show();
+        }else{
+            do{
+              result = result + "\nID = " +c.getString(c.getColumnIndex(ArticlesProvider.ID))+
+                                "\nCONTENT = "+c.getString(c.getColumnIndex(ArticlesProvider.CONTENT)) + 
+                                "\nTITLE = " +  c.getString(c.getColumnIndex(ArticlesProvider.TITLE)) + 
+                                 "\nDATE = " + c.getString(c.getColumnIndex(ArticlesProvider.DATE));
+            } while (c.moveToNext());
+           Log.i(kTag, result);
         }
-    }
-
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        if (id == R.id.action_settings) { return true; }
-        return super.onOptionsItemSelected(item);
-    }
-
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    public static class PlaceholderFragment extends Fragment {
-
-        public PlaceholderFragment() {}
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                Bundle savedInstanceState) {
-            View rootView =
-                    inflater.inflate(R.layout.fragment_main, container, false);
-            return rootView;
-        }
-    }
+       
+     }
+    
+    
 
 }
