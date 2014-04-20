@@ -64,8 +64,8 @@ public class ArticlesProvider extends ContentProvider {
     static final int DATABASE_VERSION = 1;
     static final String CREATE_TABLE = "create table " + TABLE_NAME + "(" + ID
             + " integer primary key autoincrement, " + CONTENT
-            + " text not null, " + ICON + " text not null," + TITLE
-            + " text not null," + DATE + " text not null" + ");";
+            + " text, " + ICON + " text," + TITLE
+            + " text," + DATE + " text" + ");";
 
 
 
@@ -150,6 +150,10 @@ public class ArticlesProvider extends ContentProvider {
 
     @Override
     public Uri insert(Uri uri, ContentValues values) {
+        return localInsert(uri, values);
+    }
+
+    public Uri localInsert(Uri uri, ContentValues values) {
         long row = database.insert(TABLE_NAME, "", values);
 
         // If record is added successfully
@@ -310,16 +314,26 @@ public class ArticlesProvider extends ContentProvider {
     }
 
     private void printArticles(ArrayList<Articles> articles) {
-        String content = "";
+        // String content = "";
         Iterator<Articles> it = articles.iterator();
         while (it.hasNext()) {
             Articles currArticle = it.next();
-            content = content + "Content :" + currArticle.content + "\n";
-            content = content + "Icon :" + currArticle.icon + "\n";
-            content = content + "Title :" + currArticle.title + "\n";
-            content = content + "Date :" + currArticle.date + "\n";
-            Log.e(kTag, content);
-            content = "";
+            // content = content + "Content :" + currArticle.content + "\n";
+            // content = content + "Icon :" + currArticle.icon + "\n";
+            // content = content + "Title :" + currArticle.title + "\n";
+            // content = content + "Date :" + currArticle.date + "\n";
+            // Log.e(kTag, content);
+            // content = "";
+
+            // Adding stuff to Database
+            ContentValues values = new ContentValues();
+            values.put(CONTENT, currArticle.content);
+            values.put(TITLE, currArticle.title);
+            values.put(ICON, currArticle.icon);
+            values.put(DATE, currArticle.date);
+            Uri uri = localInsert(CONTENT_URI, values);
+            Log.e(kTag, "INSERTED:");
+            Log.e(kTag, uri.toString());
         }
 
 
