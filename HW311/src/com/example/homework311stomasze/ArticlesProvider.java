@@ -63,9 +63,8 @@ public class ArticlesProvider extends ContentProvider {
     static final String TABLE_NAME = "articlesTable";
     static final int DATABASE_VERSION = 1;
     static final String CREATE_TABLE = "create table " + TABLE_NAME + "(" + ID
-            + " integer primary key autoincrement, " + CONTENT
-            + " text, " + ICON + " text," + TITLE
-            + " text," + DATE + " text" + ");";
+            + " integer primary key autoincrement, " + CONTENT + " text, "
+            + ICON + " text," + TITLE + " text," + DATE + " text" + ");";
 
 
 
@@ -170,13 +169,10 @@ public class ArticlesProvider extends ContentProvider {
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
         int count = 0;
-        Log.e(kTag, "deleting first");
 
         switch (uriMatcher.match(uri)) {
         case ARTICLES:
             // delete all the records of the table
-            Log.e(kTag, "delete all the records of the table");
-
             count = database.delete(TABLE_NAME, selection, selectionArgs);
             break;
         case ARTICLES_ID:
@@ -230,10 +226,6 @@ public class ArticlesProvider extends ContentProvider {
 
 
     public void populateDataBase() {
-        Log.e(kTag, "Populate Database");
-
-
-
         XmlPullParserFactory pullParserFactory;
         try {
             pullParserFactory = XmlPullParserFactory.newInstance();
@@ -318,13 +310,6 @@ public class ArticlesProvider extends ContentProvider {
         Iterator<Articles> it = articles.iterator();
         while (it.hasNext()) {
             Articles currArticle = it.next();
-            // content = content + "Content :" + currArticle.content + "\n";
-            // content = content + "Icon :" + currArticle.icon + "\n";
-            // content = content + "Title :" + currArticle.title + "\n";
-            // content = content + "Date :" + currArticle.date + "\n";
-            // Log.e(kTag, content);
-            // content = "";
-
             // Adding stuff to Database
             ContentValues values = new ContentValues();
             values.put(CONTENT, currArticle.content);
@@ -332,8 +317,8 @@ public class ArticlesProvider extends ContentProvider {
             values.put(ICON, currArticle.icon);
             values.put(DATE, currArticle.date);
             Uri uri = localInsert(CONTENT_URI, values);
-            Log.e(kTag, "INSERTED:");
-            Log.e(kTag, uri.toString());
+            // Log.e(kTag, "INSERTED:");
+            // Log.e(kTag, uri.toString());
         }
 
 

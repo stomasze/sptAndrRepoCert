@@ -9,6 +9,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.hardware.SensorListener;
+import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -22,11 +24,20 @@ import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
-public class MainActivity extends Activity {
-    String kTag = "MainActivity";
-    ListView list;
-    ListViewAdapter adapter;
-    ArrayList<HashMap<String, String>> mArticleList;
+public class MainActivity extends Activity implements SensorListener {
+    private static String kTag = "MainActivity";
+    private static ListView list;
+    private static ListViewAdapter adapter;
+    private static ArrayList<HashMap<String, String>> mArticleList;
+    private static SensorManager sensorMgr;
+
+    private static final int SHAKE_THRESHOLD = 2000;
+    private static long lastUpdate = 0;
+    private static float last_x = 0;
+    private static float last_y = 0;
+    private static float last_z = 0;
+    private static boolean updatingListView = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,7 +52,10 @@ public class MainActivity extends Activity {
         super.onResume();
         Log.i(kTag, "onResume()");
         showAllArticles();
-
+        sensorMgr = null;
+        sensorMgr = (SensorManager) getSystemService(SENSOR_SERVICE);
+        sensorMgr.registerListener(this, SensorManager.SENSOR_ACCELEROMETER,
+                SensorManager.SENSOR_DELAY_GAME);
     }
 
     public void showAllArticles() {
@@ -62,6 +76,9 @@ public class MainActivity extends Activity {
                     .show();
         }
         else {
+            // Ensure that we lock up any other updates until those are finished
+            updatingListView = true;
+            // Re-Initializing ListView
             mArticleList = null;
             mArticleList = new ArrayList<HashMap<String, String>>();
             do {
@@ -97,28 +114,72 @@ public class MainActivity extends Activity {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view,
                         int position, long id) {
-                    HashMap<String, String> map = mArticleList.get(position);
+                    if (!updatingListView) {
+                        HashMap<String, String> map =
+                                mArticleList.get(position);
 
 
-                    String content = (String) map.get(ArticlesProvider.CONTENT);
-                    String title = (String) map.get(ArticlesProvider.TITLE);
-                    String icon = (String) map.get(ArticlesProvider.ICON);
-                    String date = (String) map.get(ArticlesProvider.DATE);
+                        String content =
+                                (String) map.get(ArticlesProvider.CONTENT);
+                        String title = (String) map.get(ArticlesProvider.TITLE);
+                        String icon = (String) map.get(ArticlesProvider.ICON);
+                        String date = (String) map.get(ArticlesProvider.DATE);
 
-                    Intent myIntent =
-                            new Intent(view.getContext(),
-                                    ListItemActivity.class);
-                    myIntent.putExtra(ArticlesProvider.CONTENT, content);
-                    myIntent.putExtra(ArticlesProvider.TITLE, title);
-                    myIntent.putExtra(ArticlesProvider.ICON, icon);
-                    myIntent.putExtra(ArticlesProvider.DATE, date);
-                    startActivityForResult(myIntent, 0);
+                        Intent myIntent =
+                                new Intent(view.getContext(),
+                                        ListItemActivity.class);
+                        myIntent.putExtra(ArticlesProvider.CONTENT, content);
+                        myIntent.putExtra(ArticlesProvider.TITLE, title);
+                        myIntent.putExtra(ArticlesProvider.ICON, icon);
+                        myIntent.putExtra(ArticlesProvider.DATE, date);
+                        startActivityForResult(myIntent, 0);
+                    }
                 }
             });
+            adapter.notifyDataSetChanged();
+            // Indicate that it is Done updating
+            updatingListView = false;
+
         }
 
 
 
+    }
+
+    @Override
+    public void onSensorChanged(int sensor, float[] values) {
+        if (sensor == SensorManager.SENSOR_ACCELEROMETER) {
+            long curTime = System.currentTimeMillis();
+            // only allow one update every 100ms.
+            if ((curTime - lastUpdate) > 100) {
+                long diffTime = (curTime - lastUpdate);
+                lastUpdate = curTime;
+
+                float x = values[SensorManager.DATA_X];
+                float y = values[SensorManager.DATA_Y];
+                float z = values[SensorManager.DATA_Z];
+
+                float speed =
+                        Math.abs(x + y + z - last_x - last_y - last_z)
+                                / diffTime * 10000;
+
+                if (speed > SHAKE_THRESHOLD && !updatingListView) {
+                    Log.d("sensor", "shake detected w/ speed: " + speed);
+                    showAllArticles();
+                }
+                last_x = x;
+                last_y = y;
+                last_z = z;
+            }
+        }
+
+    }
+
+
+
+    @Override
+    public void onAccuracyChanged(int sensor, int accuracy) {
+        // NOTHING HERE
     }
 
 }
