@@ -273,10 +273,10 @@ public class ArticlesProvider extends ContentProvider {
                 }
                 else if (name.equals(ARTICLES_ITEM)) {
                     currentArticle = new Articles();
-                    currentArticle.content = null;
-                    currentArticle.title = null;
-                    currentArticle.icon = null;
-                    currentArticle.date = null;
+                    currentArticle.content = "";
+                    currentArticle.title = "";
+                    currentArticle.icon = "";
+                    currentArticle.date = "";
                 }
                 else if (currentArticle != null) {
                     if (name.equals(CONTENT)) {
