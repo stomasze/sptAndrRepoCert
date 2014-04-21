@@ -64,7 +64,7 @@ public class ListViewAdapter extends BaseAdapter {
             title.setText(strTitle);
         }
         if (!strContent.equals("")) {
-            content.setText(strContent.substring(0, 30));
+            content.setText(strContent.substring(0, 40)+"........");
         }
         if (!strDate.equals("")) {
             date.setText(strDate);

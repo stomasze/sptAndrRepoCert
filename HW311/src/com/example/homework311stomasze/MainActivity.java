@@ -12,6 +12,7 @@ import android.database.Cursor;
 import android.hardware.SensorListener;
 import android.hardware.SensorManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -28,6 +29,8 @@ public class MainActivity extends Activity implements SensorListener {
     private static String kTag = "MainActivity";
     private static ListView list;
     private static ListViewAdapter adapter;
+    private static LinearLayout layout;
+
     private static ArrayList<HashMap<String, String>> mArticleList;
     private static SensorManager sensorMgr;
 
@@ -51,6 +54,10 @@ public class MainActivity extends Activity implements SensorListener {
     protected void onResume() {
         super.onResume();
         Log.i(kTag, "onResume()");
+        layout = (LinearLayout) findViewById(R.id.progressbar_view);
+        layout.setVisibility(View.GONE);
+        list = (ListView) findViewById(R.id.list);
+        // new UpdateAricles().execute();
         showAllArticles();
         sensorMgr = null;
         sensorMgr = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -76,6 +83,7 @@ public class MainActivity extends Activity implements SensorListener {
                     .show();
         }
         else {
+            // layout.setVisibility(View.VISIBLE);
             // Ensure that we lock up any other updates until those are finished
             updatingListView = true;
             // Re-Initializing ListView
@@ -139,11 +147,38 @@ public class MainActivity extends Activity implements SensorListener {
             adapter.notifyDataSetChanged();
             // Indicate that it is Done updating
             updatingListView = false;
+            // layout.setVisibility(View.GONE);
 
         }
 
 
 
+    }
+
+    class UpdateAricles extends AsyncTask<String, Integer, Boolean> {
+        @Override
+        protected void onPreExecute() {
+            layout.setVisibility(View.VISIBLE);
+            super.onPreExecute();
+        }
+
+        @Override
+        protected void onPostExecute(Boolean result) {
+            layout.setVisibility(View.GONE);
+            super.onPostExecute(result);
+        }
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+            // showAllArticles();
+            try {
+                Thread.sleep(3000);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
     }
 
     @Override
@@ -165,6 +200,7 @@ public class MainActivity extends Activity implements SensorListener {
 
                 if (speed > SHAKE_THRESHOLD && !updatingListView) {
                     Log.d("sensor", "shake detected w/ speed: " + speed);
+                    new UpdateAricles().execute();
                     showAllArticles();
                 }
                 last_x = x;

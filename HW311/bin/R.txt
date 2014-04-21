@@ -243,14 +243,14 @@ int id action_context_bar 0x7f06001d
 int id action_menu_divider 0x7f060016
 int id action_menu_presenter 0x7f060017
 int id action_mode_close_button 0x7f060024
-int id action_settings 0x7f060045
+int id action_settings 0x7f060046
 int id activity_chooser_view_content 0x7f060025
 int id always 0x7f06000b
 int id beginning 0x7f060011
 int id checkbox 0x7f06002d
 int id collapseActionView 0x7f06000d
-int id content 0x7f060043
-int id date 0x7f060044
+int id content 0x7f060044
+int id date 0x7f060045
 int id default_activity_button 0x7f060028
 int id dialog 0x7f06000e
 int id disableHome 0x7f060008
@@ -268,9 +268,9 @@ int id item_content 0x7f06003f
 int id item_date 0x7f06003d
 int id item_icon_image 0x7f06003c
 int id item_title 0x7f06003e
-int id list 0x7f060040
+int id list 0x7f060041
 int id listMode 0x7f060001
-int id list_image 0x7f060042
+int id list_image 0x7f060043
 int id list_item 0x7f060029
 int id middle 0x7f060012
 int id never 0x7f060009
@@ -278,6 +278,7 @@ int id none 0x7f060010
 int id normal 0x7f060000
 int id progress_circular 0x7f060018
 int id progress_horizontal 0x7f060019
+int id progressbar_view 0x7f060040
 int id radio 0x7f06002f
 int id search_badge 0x7f060032
 int id search_bar 0x7f060031
@@ -296,7 +297,7 @@ int id showTitle 0x7f060006
 int id split_action_bar 0x7f06001e
 int id submit_area 0x7f060039
 int id tabMode 0x7f060002
-int id thumbnail 0x7f060041
+int id thumbnail 0x7f060042
 int id title 0x7f06002b
 int id top_action_bar 0x7f060020
 int id up 0x7f060021
