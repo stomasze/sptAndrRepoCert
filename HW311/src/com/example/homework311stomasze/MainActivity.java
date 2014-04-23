@@ -31,7 +31,7 @@ public class MainActivity extends Activity implements SensorListener {
     private static ListViewAdapter adapter;
     private static LinearLayout layout;
 
-    private static ArrayList<HashMap<String, String>> mArticleList;
+    private static ArrayList<HashMap<String, String>> mArticleList = null;
     private static SensorManager sensorMgr;
 
     private static final int SHAKE_THRESHOLD = 2000;
@@ -58,7 +58,12 @@ public class MainActivity extends Activity implements SensorListener {
         layout.setVisibility(View.GONE);
         list = (ListView) findViewById(R.id.list);
         // new UpdateAricles().execute();
-        showAllArticles();
+        if (!updatingListView && mArticleList == null) {
+            showAllArticles();
+        }
+        else if (!updatingListView) {
+            printView();
+        }
         sensorMgr = null;
         sensorMgr = (SensorManager) getSystemService(SENSOR_SERVICE);
         sensorMgr.registerListener(this, SensorManager.SENSOR_ACCELEROMETER,
@@ -109,49 +114,50 @@ public class MainActivity extends Activity implements SensorListener {
                 mArticleList.add(map);
             }
             while (c.moveToNext());
-            // Log.i(kTag, result);
-            list = (ListView) findViewById(R.id.list);
-
-            // Getting adapter by passing xml data ArrayList
-            adapter = new ListViewAdapter(this, mArticleList);
-            list.setAdapter(adapter);
-
-            // Click event for single list row
-            list.setOnItemClickListener(new OnItemClickListener() {
-
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view,
-                        int position, long id) {
-                    if (!updatingListView) {
-                        HashMap<String, String> map =
-                                mArticleList.get(position);
-
-
-                        String content =
-                                (String) map.get(ArticlesProvider.CONTENT);
-                        String title = (String) map.get(ArticlesProvider.TITLE);
-                        String icon = (String) map.get(ArticlesProvider.ICON);
-                        String date = (String) map.get(ArticlesProvider.DATE);
-
-                        Intent myIntent =
-                                new Intent(view.getContext(),
-                                        ListItemActivity.class);
-                        myIntent.putExtra(ArticlesProvider.CONTENT, content);
-                        myIntent.putExtra(ArticlesProvider.TITLE, title);
-                        myIntent.putExtra(ArticlesProvider.ICON, icon);
-                        myIntent.putExtra(ArticlesProvider.DATE, date);
-                        startActivityForResult(myIntent, 0);
-                    }
-                }
-            });
-            adapter.notifyDataSetChanged();
-            // Indicate that it is Done updating
-            updatingListView = false;
-            // layout.setVisibility(View.GONE);
+            printView();
 
         }
+    }
+
+    public void printView() {
+
+        // Log.i(kTag, result);
+        list = (ListView) findViewById(R.id.list);
+
+        // Getting adapter by passing xml data ArrayList
+        adapter = new ListViewAdapter(this, mArticleList);
+        list.setAdapter(adapter);
+
+        // Click event for single list row
+        list.setOnItemClickListener(new OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view,
+                    int position, long id) {
+                if (!updatingListView) {
+                    HashMap<String, String> map = mArticleList.get(position);
 
 
+                    String content = (String) map.get(ArticlesProvider.CONTENT);
+                    String title = (String) map.get(ArticlesProvider.TITLE);
+                    String icon = (String) map.get(ArticlesProvider.ICON);
+                    String date = (String) map.get(ArticlesProvider.DATE);
+
+                    Intent myIntent =
+                            new Intent(view.getContext(),
+                                    ListItemActivity.class);
+                    myIntent.putExtra(ArticlesProvider.CONTENT, content);
+                    myIntent.putExtra(ArticlesProvider.TITLE, title);
+                    myIntent.putExtra(ArticlesProvider.ICON, icon);
+                    myIntent.putExtra(ArticlesProvider.DATE, date);
+                    startActivityForResult(myIntent, 0);
+                }
+            }
+        });
+        adapter.notifyDataSetChanged();
+        // Indicate that it is Done updating
+        updatingListView = false;
+        // layout.setVisibility(View.GONE);
 
     }
 
@@ -172,7 +178,8 @@ public class MainActivity extends Activity implements SensorListener {
         protected Boolean doInBackground(String... params) {
             // showAllArticles();
             try {
-                Thread.sleep(3000);
+                while (updatingListView)
+                    Thread.sleep(1000);
             }
             catch (Exception e) {
                 e.printStackTrace();
@@ -199,7 +206,7 @@ public class MainActivity extends Activity implements SensorListener {
                                 / diffTime * 10000;
 
                 if (speed > SHAKE_THRESHOLD && !updatingListView) {
-                    Log.d("sensor", "shake detected w/ speed: " + speed);
+                    updatingListView = true;
                     new UpdateAricles().execute();
                     showAllArticles();
                 }
