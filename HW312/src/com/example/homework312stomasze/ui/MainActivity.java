@@ -1,28 +1,31 @@
-package com.example.homework311stomasze;
+package com.example.homework312stomasze.ui;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import com.example.homework312stomasze.R;
+import com.example.homework312stomasze.providers.ArticlesProvider;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.hardware.SensorListener;
 import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewParent;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 public class MainActivity extends Activity implements SensorListener {
@@ -41,19 +44,59 @@ public class MainActivity extends Activity implements SensorListener {
     private static float last_z = 0;
     private static boolean updatingListView = false;
 
+    static private Cursor c;
+    private BroadcastReceiver receiver;
+    private UIUpdater mHandler;
+
+    public static class UIUpdater extends Handler {
+        private final WeakReference<MainActivity> mService;
+
+        UIUpdater(MainActivity service) {
+            mService = new WeakReference<MainActivity>(service);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            MainActivity service = mService.get();
+            if (service != null) {
+                Log.e(kTag, "CALLING UPDATE LIST");
+                service.updateList();
+            }
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mHandler = new UIUpdater(this);
+        // REgister Receiver
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ArticlesProvider.BROADCAST_ALL_DATA_READY);
+
+        // Receiver Action
+        receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.e(kTag, "GOT RECEIVE");
+                mHandler.post(null);
+            }
+        };
+        registerReceiver(receiver, filter);
     }
 
-
+    @Override
+    protected void onPause() {
+        super.onPause();
+        //unregisterReceiver(receiver);
+    }
 
     @Override
     protected void onResume() {
         super.onResume();
         Log.i(kTag, "onResume()");
+
         layout = (LinearLayout) findViewById(R.id.progressbar_view);
         layout.setVisibility(View.GONE);
         list = (ListView) findViewById(R.id.list);
@@ -70,25 +113,51 @@ public class MainActivity extends Activity implements SensorListener {
                 SensorManager.SENSOR_DELAY_GAME);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(receiver);
+    }
+
     public void showAllArticles() {
         // Show all the Articles sorted by Title name
         String URL = ArticlesProvider.URL;
         Uri articles = Uri.parse(URL);
         // Delete First
         int count = getContentResolver().delete(articles, null, null);
+
+        // getContentResolver().getNewArticles();
         // Get threw new Content
-        Cursor c =
+        c =
                 getContentResolver().query(articles, null, null, null,
                         ArticlesProvider.TITLE);
 
-        String result = "Results:";
+        Log.e(kTag,"Getting Data");
+        // String result = "Results:";
+        //
+        // if (!c.moveToFirst()) {
+        // Toast.makeText(this, result + " no content yet!", Toast.LENGTH_LONG)
+        // .show();
+        // }
+        // else {
+        // //updateList();
+        //
+        // }
+    }
 
+    public void updateList() {
+        Log.e(kTag,"UpdateList");
+        // Show all the Articles sorted by Title name
+        String URL = ArticlesProvider.URL;
+        Uri articles = Uri.parse(URL);
+        c =
+                getContentResolver().query(articles, null, null, null,
+                        ArticlesProvider.TITLE);
+        // layout.setVisibility(View.VISIBLE);
         if (!c.moveToFirst()) {
-            Toast.makeText(this, result + " no content yet!", Toast.LENGTH_LONG)
-                    .show();
+            Toast.makeText(this, " no content yet!", Toast.LENGTH_LONG).show();
         }
         else {
-            // layout.setVisibility(View.VISIBLE);
             // Ensure that we lock up any other updates until those are finished
             updatingListView = true;
             // Re-Initializing ListView
@@ -115,8 +184,8 @@ public class MainActivity extends Activity implements SensorListener {
             }
             while (c.moveToNext());
             printView();
-
         }
+
     }
 
     public void printView() {

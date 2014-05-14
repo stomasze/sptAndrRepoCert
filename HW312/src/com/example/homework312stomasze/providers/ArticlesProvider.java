@@ -1,4 +1,4 @@
-package com.example.homework311stomasze;
+package com.example.homework312stomasze.providers;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -6,6 +6,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
@@ -14,6 +20,7 @@ import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.SQLException;
@@ -23,28 +30,36 @@ import android.database.sqlite.SQLiteQueryBuilder;
 import android.graphics.Canvas;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.text.Html;
+import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.Log;
 
 public class ArticlesProvider extends ContentProvider {
     String kTag = "ArticlesProvider";
+
+    // BroadCast Receiver to be send to
+    static public final String BROADCAST_ALL_DATA_READY =
+            "com.example.homework312stomasze.DATA_READY";
+
     // fields for my content provider
-    static final String PROVIDER_NAME = "com.example.homework311stomasze";
-    static final String URL = "content://" + PROVIDER_NAME + "/articles";
-    static final Uri CONTENT_URI = Uri.parse(URL);
+    static public final String PROVIDER_NAME =
+            "com.example.homework312stomasze.providers";
+    static public final String URL = "content://" + PROVIDER_NAME + "/articles";
+    static public final Uri CONTENT_URI = Uri.parse(URL);
 
     // fields for the database
-    static final String ID = "Id";
-    static final String ARTICLES_TAG = "articles";
-    static final String ARTICLES_ITEM = "item";
-    static final String CONTENT = "content";
-    static final String ICON = "icon";
-    static final String TITLE = "title";
-    static final String DATE = "date";
+    static public final String ID = "Id";
+    static public final String ARTICLES_TAG = "articles";
+    static public final String ARTICLES_ITEM = "item";
+    static public final String CONTENT = "content";
+    static public final String ICON = "icon";
+    static public final String TITLE = "title";
+    static public final String DATE = "date";
 
     // integer values used in content URI
-    static final int ARTICLES = 1;
-    static final int ARTICLES_ID = 2;
+    static public final int ARTICLES = 1;
+    static public final int ARTICLES_ID = 2;
 
     DBHelper dbHelper;
 
@@ -67,6 +82,8 @@ public class ArticlesProvider extends ContentProvider {
     static final String CREATE_TABLE = "create table " + TABLE_NAME + "(" + ID
             + " integer primary key autoincrement, " + CONTENT + " text, "
             + ICON + " text," + TITLE + " text," + DATE + " text" + ");";
+
+    private static Context context;
 
 
 
@@ -94,8 +111,6 @@ public class ArticlesProvider extends ContentProvider {
 
     }
 
-    Context context;
-
     @Override
     public boolean onCreate() {
         context = getContext();
@@ -108,13 +123,36 @@ public class ArticlesProvider extends ContentProvider {
             return true;
     }
 
+    public void getNewArticles() {
+        // Populate first from the XML FILE
+        new ArticleListAsyncTask().execute();
+    }
+
+    private static boolean boolGetNewArticles = true;
+    private static ArticleListAsyncTask myTask;
     @Override
     public Cursor query(Uri uri, String[] projection, String selection,
             String[] selectionArgs, String sortOrder) {
-        // Populate first from the XML FILE
-        new ArticleListAsyncTask().execute();
+        
+        Log.e(kTag, "Quary");
+        // Populate Database
+        if (boolGetNewArticles) {
+            if(myTask!= null)
+                myTask.cancel(true);
+            myTask= new ArticleListAsyncTask();
+            myTask.execute();
+            boolGetNewArticles = false;
+            Log.e(kTag, "Getting New Articles");
+
+        }
+        else {
+            Log.e(kTag, "Getting the cursor");
+
+            boolGetNewArticles = true;
+        }
         // SQlite QUotery
         SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
+
         // the TABLE_NAME to query on
         queryBuilder.setTables(TABLE_NAME);
 
@@ -229,21 +267,32 @@ public class ArticlesProvider extends ContentProvider {
     private class ArticleListAsyncTask extends AsyncTask<Void, Void, Void> {
         @Override
         protected Void doInBackground(Void... params) {
-            populateDataBase();
-
+            Log.e(kTag, "ArticleListAsync");
+            populateDataBase("https://news.google.com/news/section?topic=w&output=rss");
+            populateDataBase("http://news.yahoo.com/rss/world/");
+            Log.e(kTag, "After AsyncTask");
+            // Send BroadCast that we are done with the
+            Intent intent = new Intent();
+            intent.setAction(BROADCAST_ALL_DATA_READY);
+            context.sendBroadcast(intent);
+            Log.e(kTag, "Send BroadCast");
             return null;
+        }
+
+        protected void onProgressUpdate(Integer... progress) {
+
+        }
+
+        protected void onPostExecute(Long result) {
         }
     }
 
-    public void populateDataBase() {
+    public void populateDataBase(String data) {
         XmlPullParserFactory pullParserFactory;
         try {
             pullParserFactory = XmlPullParserFactory.newInstance();
             XmlPullParser parser = pullParserFactory.newPullParser();
-            InputStream inputStream= getHTTPInputStream("https://raw.githubusercontent.com/uw/aad/master/samples/HelloHTTP/assets/books.json");
-            reader = new JsonReader(new InputStreamReader(inputStream, "UTF-8"));
-            InputStream in =
-                    context.getResources().openRawResource(R.raw.hrd314_data);
+            InputStream in = getHTTPInputStream(data);
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
             parser.setInput(in, null);
 
@@ -251,9 +300,31 @@ public class ArticlesProvider extends ContentProvider {
             in.close();
         }
         catch (Throwable t) {
-            Log.e("Error", t + "");
+            Log.e(kTag, t + "");
         }
 
+    }
+
+    protected InputStream getHTTPInputStream(String site) throws IOException {
+
+        InputStream inputStream = null;
+
+        HttpClient client = new DefaultHttpClient();
+        HttpGet httpGet = new HttpGet(site);
+
+        HttpResponse response = client.execute(httpGet);
+        StatusLine statusLine = response.getStatusLine();
+        int statusCode = statusLine.getStatusCode();
+        if (statusCode != 200) {
+            // We have had some kind of error
+            Log.e("Error", "HTTP Error: " + statusCode);
+            return null;
+        }
+
+        HttpEntity entity = response.getEntity();
+        inputStream = entity.getContent();
+
+        return inputStream;
     }
 
     private void parseXML(XmlPullParser parser) throws XmlPullParserException,
@@ -281,8 +352,11 @@ public class ArticlesProvider extends ContentProvider {
                     currentArticle.date = "";
                 }
                 else if (currentArticle != null) {
-                    if (name.equals(CONTENT)) {
-                        currentArticle.content = parser.nextText();
+                    if (name.equals(CONTENT)||name.equals("description")) {
+                        
+                        Log.e(kTag,"" + parser.nextText());
+                        //Spanned sp = Html.fromHtml( parser.nextText() );
+                        //currentArticle.content = sp.toString();
                     }
                     else if (name.equals(ICON)) {
                         currentArticle.icon = parser.nextText();
@@ -290,7 +364,7 @@ public class ArticlesProvider extends ContentProvider {
                     else if (name.equals(TITLE)) {
                         currentArticle.title = parser.nextText();
                     }
-                    else if (name.equals(DATE)) {
+                    else if (name.equals(DATE)||name.equals("pubDate")) {
                         currentArticle.date = parser.nextText();
                     }
                 }

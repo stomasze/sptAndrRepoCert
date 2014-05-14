@@ -1,4 +1,10 @@
-package com.example.homework311stomasze;
+package com.example.homework312stomasze.ui;
+
+import com.example.homework312stomasze.R;
+import com.example.homework312stomasze.R.id;
+import com.example.homework312stomasze.R.layout;
+import com.example.homework312stomasze.data.ImageLoader;
+import com.example.homework312stomasze.providers.ArticlesProvider;
 
 import android.app.Activity;
 import android.os.Bundle;

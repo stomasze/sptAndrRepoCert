@@ -1,4 +1,4 @@
-package com.example.homework311stomasze;
+package com.example.homework312stomasze.data;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -14,6 +14,11 @@ import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
  
+
+
+import com.example.homework312stomasze.R;
+import com.example.homework312stomasze.R.drawable;
+
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
