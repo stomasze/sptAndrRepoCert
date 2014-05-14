@@ -34,6 +34,7 @@ import android.text.Html;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.Log;
+import android.webkit.WebView;
 
 public class ArticlesProvider extends ContentProvider {
     String kTag = "ArticlesProvider";
@@ -130,16 +131,19 @@ public class ArticlesProvider extends ContentProvider {
 
     private static boolean boolGetNewArticles = true;
     private static ArticleListAsyncTask myTask;
+
     @Override
     public Cursor query(Uri uri, String[] projection, String selection,
             String[] selectionArgs, String sortOrder) {
-        
+
         Log.e(kTag, "Quary");
         // Populate Database
         if (boolGetNewArticles) {
-            if(myTask!= null)
+            if (myTask != null) {
                 myTask.cancel(true);
-            myTask= new ArticleListAsyncTask();
+                myTask = null;
+            }
+            myTask = new ArticleListAsyncTask();
             myTask.execute();
             boolGetNewArticles = false;
             Log.e(kTag, "Getting New Articles");
@@ -283,8 +287,7 @@ public class ArticlesProvider extends ContentProvider {
 
         }
 
-        protected void onPostExecute(Long result) {
-        }
+        protected void onPostExecute(Long result) {}
     }
 
     public void populateDataBase(String data) {
@@ -296,7 +299,7 @@ public class ArticlesProvider extends ContentProvider {
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
             parser.setInput(in, null);
 
-            parseXML(parser);
+            parseXML(parser, data);
             in.close();
         }
         catch (Throwable t) {
@@ -327,8 +330,8 @@ public class ArticlesProvider extends ContentProvider {
         return inputStream;
     }
 
-    private void parseXML(XmlPullParser parser) throws XmlPullParserException,
-            IOException {
+    private void parseXML(XmlPullParser parser, String data)
+            throws XmlPullParserException, IOException {
         ArrayList<Articles> articles = new ArrayList<Articles>();
         int eventType = parser.getEventType();
         Articles currentArticle = null;
@@ -352,19 +355,31 @@ public class ArticlesProvider extends ContentProvider {
                     currentArticle.date = "";
                 }
                 else if (currentArticle != null) {
-                    if (name.equals(CONTENT)||name.equals("description")) {
-                        
-                        Log.e(kTag,"" + parser.nextText());
-                        //Spanned sp = Html.fromHtml( parser.nextText() );
-                        //currentArticle.content = sp.toString();
+                    if (name.equals(CONTENT) || name.equals("description")) {
+                        if (data == "http://news.yahoo.com/rss/world/") {
+                            String str = parser.nextText();
+                            Spanned sp = Html.fromHtml(str);
+                            currentArticle.content = sp.toString();
+                            currentArticle.icon = getIcon(str);
+                        }
+                        else {
+                            String str = parser.nextText();
+                            Spanned sp = Html.fromHtml(str);
+                            currentArticle.content = sp.toString();
+                            // currentArticle.icon = getIcon(str);
+                        }
                     }
-                    else if (name.equals(ICON)) {
-                        currentArticle.icon = parser.nextText();
-                    }
+                    // else if (name.equals(ICON) || name.equals("guid")) {
+                    // eventType = parser.next();
+                    // eventType = parser.next();
+                    // name = parser.getName();
+                    // if(name.equals("media:content"))
+                    // currentArticle.icon = parser.nextText();
+                    // }
                     else if (name.equals(TITLE)) {
                         currentArticle.title = parser.nextText();
                     }
-                    else if (name.equals(DATE)||name.equals("pubDate")) {
+                    else if (name.equals(DATE) || name.equals("pubDate")) {
                         currentArticle.date = parser.nextText();
                     }
                 }
@@ -380,6 +395,28 @@ public class ArticlesProvider extends ContentProvider {
         }
 
         printArticles(articles);
+    }
+
+    public String getContent(String htmlData) {
+
+        String content = "";
+
+        int first = htmlData.indexOf("</a>");
+        int last = htmlData.indexOf("</p><br clear=\"all\"/");
+        content = htmlData.substring(first + 4, last);
+        return content;
+    }
+
+    public String getIcon(String htmlData) {
+
+        String icon = "";
+
+        int first = htmlData.indexOf("img src=");
+        int last = htmlData.indexOf("\" width=");
+        if (first != -1 && last != -1)
+            icon = htmlData.substring(first + 9, last);
+
+        return icon;
     }
 
     class Articles {

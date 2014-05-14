@@ -70,7 +70,7 @@ public class ListViewAdapter extends BaseAdapter {
             title.setText(strTitle);
         }
         if (!strContent.equals("")) {
-            content.setText(strContent.substring(0, 40)+"........");
+           // content.setText(strContent.substring(0, 20)+"........");
         }
         if (!strDate.equals("")) {
             date.setText(strDate);
